@@ -1,0 +1,31 @@
+steps:
+  # 1. Dockerイメージのビルド
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Image'
+    args: ['build', '-t', 'asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image', '.']
+
+  # 2. Artifact Registryへのプッシュ
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Image'
+    args: ['push', 'asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image']
+
+  # # 3. Cloud Deployでリリースを作成 (CDへの橋渡し)
+  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  #   id: 'Create Release'
+  #   entrypoint: 'gcloud'
+  #   args:
+  #     - 'deploy'
+  #     - 'releases'
+  #     - 'create'
+  #     - 'release-$SHORT_SHA'
+  #     - '--delivery-pipeline=my-pipeline'
+  #     - '--region=asia-northeast1'
+  #     - '--images=my-app-image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$SHORT_SHA'
+
+# オプション設定
+options:
+  logging: CLOUD_LOGGING_ONLY # ログをCloud Loggingに集約（BigQuery分析に便利）
+
+# 置換変数（組み込み変数）
+substitutions:
+  _ENV: 'dev'
