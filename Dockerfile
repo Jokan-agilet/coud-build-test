@@ -19,7 +19,7 @@ COPY src src
 RUN ./mvnw package -DskipTests
 
 # --- ステージ2: 実行（軽量JRE） ---
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # ステージ1で作成されたJAR（通常 target/ フォルダ内）をコピー
