@@ -1,28 +1,28 @@
-# --- ステージ1: ビルド（重いJDKを使用） ---
-FROM eclipse-temurin:21-jdk-alpine AS builder
+# --- ステージ1: ビルド（Maven環境） ---
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
-# 1. Gradleの実行環境（ラッパー）をコピー
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle settings.gradle ./
+# 1. 設定ファイルとラッパーをコピー
+# Maven Wrapperに関連するファイル一式を先にコピーするのがコツです
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
-# 2. 依存関係のキャッシュ（ライブラリのDL時間を短縮）
-RUN ./gradlew build -x test --no-daemon > /dev/null 2>&1 || true
+# 2. 依存ライブラリをダウンロード（キャッシュ利用）
+RUN ./mvnw dependency:go-offline -B
 
-# 3. ソースコードをコピーしてJARを作成
+# 3. ソースコードをコピーしてビルド
 COPY src src
-RUN ./gradlew bootJar --no-daemon -x test
+RUN ./mvnw package -DskipTests
 
-# --- ステージ2: 実行（軽量なJREのみを使用） ---
+# --- ステージ2: 実行（軽量JRE） ---
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# ステージ1で作成されたJARファイルだけを抽出してコピー
-COPY --from=builder /app/build/libs/*.jar app.jar
+# ステージ1で作成されたJAR（通常 target/ フォルダ内）をコピー
+# ※JAR名は pom.xml の設定に依存するため、ワイルドカードを使うのが安全です
+COPY --from=builder /app/target/*.jar app.jar
 
-# 実行ポートを明示（Spring Bootのデフォルトは8080）
 EXPOSE 8080
 
-# アプリケーションの起動コマンド
 ENTRYPOINT ["java", "-jar", "app.jar"]
