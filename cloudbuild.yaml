@@ -26,6 +26,6 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY # ログをCloud Loggingに集約（BigQuery分析に便利）
 
-# 置換変数（組み込み変数）
-substitutions:
-  _ENV: 'dev'
+# # 置換変数（組み込み変数）
+# substitutions:
+#   _ENV: 'dev'
