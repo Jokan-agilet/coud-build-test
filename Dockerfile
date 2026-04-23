@@ -8,10 +8,13 @@ COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
-# 2. 依存ライブラリをダウンロード（キャッシュ利用）
+# 2.Mavenファイル実行の権限を付与
+RUN chmod +x mvnw
+
+# 3. 依存ライブラリをダウンロード（キャッシュ利用）
 RUN ./mvnw dependency:go-offline -B
 
-# 3. ソースコードをコピーしてビルド
+# 4. ソースコードをコピーしてビルド
 COPY src src
 RUN ./mvnw package -DskipTests
 
