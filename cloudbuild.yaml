@@ -1,3 +1,5 @@
+
+
 steps:
   # 1. Dockerイメージのビルド
   - name: 'gcr.io/cloud-builders/docker'
@@ -9,18 +11,51 @@ steps:
     id: 'Push Image'
     args: ['push', 'asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image']
 
-  # # 3. Cloud Deployでリリースを作成 (CDへの橋渡し)
-  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  #   id: 'Create Release'
-  #   entrypoint: 'gcloud'
-  #   args:
-  #     - 'deploy'
-  #     - 'releases'
-  #     - 'create'
-  #     - 'release-$SHORT_SHA'
-  #     - '--delivery-pipeline=my-pipeline'
-  #     - '--region=asia-northeast1'
-  #     - '--images=my-app-image=asia-northeast1-docker.pkg.dev/$PROJECT_ID/my-repo/my-app:$SHORT_SHA'
+  # 3. 获取Digest
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: Get DIGEST
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts docker images describe \
+          asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image\
+          --format='value(image_summary.digest)' \
+          > /workspace/digest.txt
+
+  # 4.创建 Attestation
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: Attest
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        local_digest=$(cat /workspace/digest.txt)
+
+        gcloud beta container binauthz attestations sign-and-create \
+          --artifact-url="asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image@$local_digest" \
+          --attestor="TeatAttestor" \
+          --attestor-project="circleci-demo-484408" \
+          --keyversion-project="circleci-demo-484408" \
+          --keyversion-location="asia-northeast1" \
+          --keyversion-keyring="circleci-demo-key" \
+          --keyversion-key="ForSign" \
+          --keyversion="1"
+
+    
+  # 5.Check 
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: Check Attestation
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        local_digest=$(cat /workspace/digest.txt)
+
+        gcloud container binauthz attestations list \
+          --attestor="TeatAttestor" \
+          --artifact-url="asia-northeast1-docker.pkg.dev/circleci-demo-484408/circle-demo/cloud-build-image@$local_digest" \
+          --attestor-project="circleci-demo-484408" \
 
 # オプション設定
 options:

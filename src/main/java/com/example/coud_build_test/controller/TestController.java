@@ -10,6 +10,6 @@ public class TestController {
     @GetMapping("test")
     public String test() throws Exception {
         System.err.println("★★★★クラウドビルドテストです！！");
-        return "★★★★クラウドビルドテストです！！";
+        return "★夜の星★";
     }
 }
